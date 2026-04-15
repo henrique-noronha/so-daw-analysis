@@ -1,0 +1,22 @@
+# Arquivos auxiliares do LaTeX
+*.aux
+*.bbl
+*.blg
+*.brf
+*.fls
+*.fdb_latexmk
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.synctex.gz
+
+# Ignorar o PDF gerado automaticamente durante o desenvolvimento
+*.pdf
+
+# Pastas e arquivos do VS Code
+.vscode/

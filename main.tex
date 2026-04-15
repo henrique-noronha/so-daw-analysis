@@ -1,0 +1,174 @@
+% ----------------------------------------------------------------------------------------------------- %
+% Arquivo Principal - Trabalho de Sistemas Operacionais
+% ----------------------------------------------------------------------------------------------------- %
+
+\documentclass[tcc1]{classe_uftex/uftex}
+\newcommand\uftex{UF\TeX}
+
+\usepackage{lipsum}
+\usepackage{tikz}
+\usepackage[siunitx]{circuitikz}
+\usetikzlibrary{arrows}
+
+\usepackage[alf,abnt-emphasize=bf]{referencias_abnt/abntex2cite}
+\renewcommand{\backrefpagesname}{}
+\renewcommand{\backref}{}
+\renewcommand*{\backrefalt}[4]{}
+
+\makelosymbols
+\makeloabbreviations
+
+% ========================================================================= %
+% PATCH DE CORREÇÃO (Conserta o uftex.cls original sem precisar editá-lo)
+% ========================================================================= %
+\makeatletter
+% 1. Corrige o caminho da logo que estava quebrado na classe da UFT
+\renewcommand\maketitle{%
+  \ltx@ifpackageloaded{hyperref}{\uftex@hypersetup}{}%
+ \begin{titlepage}
+ \begin{center}
+ \includegraphics[scale=.3]{classe_uftex/logouft}\\ % <-- Caminho consertado!
+ \setstretch{1}
+ \MakeUppercase{\bf\frontcover@maintext}
+ \end{center}
+  \begin{center}
+  \vspace{4cm}
+  \nohyphens{\MakeUppercase{\bf\@authname\ \@authsurn}}\par
+  \vspace{4cm}
+  \nohyphens{\bf\MakeUppercase\local@title}\par
+  \vfill
+  {\bf\frontpage@bottomtext}
+  \end{center}
+  \end{titlepage}
+  \global\let\maketitle\relax \global\let\and\relax
+}
+
+% 2. Previne o erro letal de "Runaway argument" na Folha de Rosto
+\renewcommand\frontpage@maintext{
+  \sloppy\nohyphens{\local@doctype\ apresentado à \local@universityname\ para obten{\c c}{\~ a}o do t{\' i}tulo de \local@degname\ em \local@deptname .}
+ \vspace{.5cm}
+    \count1=0
+    \@whilenum \count1<\@advisor \do{%
+    \ifcase\count1 
+        \nohyphens{\local@advisorstring : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
+    \else
+        \nohyphens{\local@coadvisorstring : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
+    \fi
+    \advance\count1 by 1}
+}
+
+% 3. Previne o erro de compilação dentro da área de Resumo e Abstract
+\renewenvironment{abstract}{%
+\cleardoublepage \thispagestyle{empty} \chapter*{Resumo} \setlength{\parindent}{0pt}
+}{\vspace{.5cm}
+\count1=0
+\noindent\nohyphens{{\bfseries Palavra-chave}:} \@whilenum \count1<\value{keywords} \do {%
+        \nohyphens{\csname uftKeyword:\the\count1 \endcsname.}
+        \advance\count1 by 1}\par}
+
+\renewenvironment{foreignabstract}{%
+\cleardoublepage \thispagestyle{empty} \chapter*{Abstract} \setlength{\parindent}{0pt}
+}{\vspace{.5cm}
+\noindent\nohyphens{{\bfseries Keywords}:} 
+\count1=0
+    \@whilenum \count1<\@foreignkeyword \do{%
+    \nohyphens{\protect\csname uftForeignkeyword:\the\count1\expandafter\endcsname .}
+    \advance\count1 by 1}\par}
+
+% ========================================================================= %
+% ========================================================================= %
+% 4. Patch de emergência para as variáveis ausentes na capa
+% ========================================================================= %
+\makeatletter
+\def\@degreename{Bacharel}
+\def\local@degname{Bacharel}
+\def\local@deptname{Ciência da Computação}
+\def\local@programname{Ciência da Computação}
+
+% ADICIONE ESTA LINHA PARA MUDAR A DESCRIÇÃO:
+\def\local@doctype{Relatório de Sistemas Operacionais} 
+
+\makeatother
+% ========================================================================= %
+
+% ---- Início do documento
+\begin{document}
+  
+  \title{Análise Comparativa de Gerenciamento de Recursos do SO: Ableton Live vs. FL Studio}
+  \author{Henrique}{Noronha Fernandes}
+  \advisor{Prof.}{[Nome do Professor de SO]}{[Sobrenome]}{[Titulação]} 
+  
+  \department{Ciência da Computação}
+  \date{15}{04}{2026}
+  
+  \keyword{Sistemas Operacionais}
+  \keyword{Escalonamento de Threads}
+  \keyword{Gerenciamento de Memória}
+  \keyword{Latência de Áudio}
+  \keyword{Análise de Desempenho}
+  
+  \foreignkeyword{Operating Systems}
+  \foreignkeyword{Thread Scheduling}
+  \foreignkeyword{Memory Management}
+  \foreignkeyword{Audio Latency}
+  \foreignkeyword{Performance Analysis}
+  
+  \maketitle
+  \frontmatter
+
+  \begin{abstract}
+  Aqui você vai inserir o resumo do seu trabalho de SO em português.
+  \end{abstract}
+
+  \begin{foreignabstract}
+  Here you will insert your abstract in English.
+  \end{foreignabstract}
+  
+  \printlosymbols  
+  \printloabbreviations
+  \listoffigures
+  \listoftables 
+  \tableofcontents 
+  
+\mainmatter
+\onehalfspacing
+
+% ----------------------------------------------------------------------------------------------------- %
+% CAPÍTULOS DO TRABALHO
+% ----------------------------------------------------------------------------------------------------- %
+
+\chapter{Introdução}
+% Contextualizar o tema da performance de softwares de áudio (DAWs) sob a ótica dos Sistemas Operacionais. Apresentar o problema de gerência de tempo real e os objetivos do trabalho.
+
+\chapter{Referencial Teórico}
+% Conceitos básicos necessários para entender a análise.
+\section{Gerenciamento de Processos e Threads}
+% Citações recomendadas: Tanenbaum, Silberschatz, Stallings.
+\section{Interrupções e Latência de I/O em Tempo Real}
+\section{Gerenciamento de Memória e Paginação}
+
+\chapter{Metodologia}
+% Descrever os experimentos realizados. Quais versões dos softwares foram usadas? Qual o setup da máquina de teste? Quais variáveis de controle (ex: tamanho do buffer, plugins idênticos) foram estabelecidas?
+
+\chapter{Resultados}
+% Apresentar os dados brutos extraídos das análises.
+\section{Consumo de CPU e Comportamento Multithread}
+% Inserir gráficos e tabelas de carga de CPU.
+\section{Uso de Memória RAM}
+% Capturas de tela do Monitor de Recursos/htop.
+\section{Análise de Latência e Buffer}
+
+\chapter{Discussão}
+% Análise crítica dos resultados. Por que o Ableton se comportou de um jeito e o FL Studio de outro? Relacionar os resultados práticos com a teoria apresentada no Capítulo 2.
+
+\chapter{Conclusão}
+% Síntese das descobertas. Qual arquitetura de software lidou melhor com os recursos do SO? Possíveis aplicações ou recomendações.
+
+% ----------------------------------------------------------------------------------------------------- %
+% REFERÊNCIAS
+% ----------------------------------------------------------------------------------------------------- %
+
+% Certifique-se de ter um arquivo referencias.bib na mesma pasta ou ajuste o nome abaixo
+\bibliography{referencias}
+
+\end{document}
