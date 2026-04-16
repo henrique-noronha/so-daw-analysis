@@ -116,13 +116,7 @@
   \maketitle
   \frontmatter
 
-  \begin{abstract}
-  Aqui você vai inserir o resumo do seu trabalho de SO em português.
-  \end{abstract}
 
-  \begin{foreignabstract}
-  Here you will insert your abstract in English.
-  \end{foreignabstract}
   
   \printlosymbols  
   \printloabbreviations
@@ -148,7 +142,45 @@
 \section{Gerenciamento de Memória e Paginação}
 
 \chapter{Metodologia}
-% Descrever os experimentos realizados. Quais versões dos softwares foram usadas? Qual o setup da máquina de teste? Quais variáveis de controle (ex: tamanho do buffer, plugins idênticos) foram estabelecidas?
+\section{Metodologia Experimental}
+
+O presente estudo adota uma abordagem quantitativa e comparativa para analisar o gerenciamento de recursos e o desempenho de \textit{Digital Audio Workstations} (DAWs) sob a ótica de Sistemas Operacionais. O foco reside na interação entre o \textit{kernel} do Windows e os motores de áudio do \textbf{Ableton Live 12} e \textbf{FL Studio 24}, estendendo-se para análises em ambientes \textit{Unix-like}.
+
+\subsection{Ambiente de Teste e Isolamento de Variáveis}
+Para garantir a reprodutibilidade e a precisão dos dados, o ambiente foi configurado para minimizar a interferência de processos em segundo plano (\textit{background noise}):
+\begin{itemize}
+    \item \textbf{Camada de Abstração de Áudio:} Utilizou-se o driver de baixa latência \texttt{ASIO4ALL v2}. Este protocolo permite o acesso exclusivo à interface de hardware, contornando o \textit{Kernel Mixer} nativo do Windows e reduzindo a latência de processamento em tempo real.
+    \item \textbf{Hardware Host:} Os testes foram executados em uma estação de trabalho com processador multinúcleo, permitindo observar o escalonamento de \textit{threads} pelo gerenciador do sistema.
+\end{itemize}
+
+\subsection{Instrumentação e Coleta de Métricas}
+A coleta de dados de performance foi realizada em nível de sistema e processo, utilizando ferramentas de monitoramento profundo:
+\begin{itemize}
+    \item \textbf{Performance Monitor (PerfMon):} Ferramenta nativa utilizada para capturar contadores do \textit{kernel} em formato binário (\texttt{.blg}). As métricas principais incluem:
+    \begin{itemize}
+        \item \texttt{\% de Tempo do Processador}: Mede a carga de trabalho imposta ao processador pelas \textit{threads} específicas da aplicação.
+        \item \texttt{Bytes Particulares (Private Bytes)}: Monitora o espaço de endereçamento de memória virtual alocado exclusivamente para o processo, revelando estratégias de alocação e redundância.
+    \end{itemize}
+    \item \textbf{Process Explorer (Sysinternals):} 
+\end{itemize}
+
+\subsection{Protocolo de Teste: Linha de Base (Baseline)}
+O teste inicial estabelece o consumo de recursos sob uma carga de trabalho \textit{I/O-bound} (limitada por entrada/saída), utilizando áudio não comprimido:
+\begin{enumerate}
+    \item \textbf{Carga de Trabalho:} Execução em \textit{loop} de arquivos no formato \textbf{AIFF} (PCM), evitando ciclos de CPU destinados à descompressão de dados.
+    \item \textbf{Escalabilidade:} O teste inicia com uma única instância, progredindo para a reprodução simultânea de \textbf{20 trilhas idênticas}.
+    \item \textbf{Análise de Arquitetura:} Observação do comportamento de alocação de memória (identificação de \textit{Shared Memory Pointers} vs. alocações redundantes) e do impacto de algoritmos de proteção de saída, como o \textit{Fruity Limiter} no FL Studio em comparação à arquitetura aditiva do Ableton Live.
+\end{enumerate}
+
+\subsection{Expansão Multiplataforma via Virtualização}
+A fim de comparar a eficiência de diferentes \textit{kernels} (Windows NT vs. Unix-like), a metodologia prevê a replicação dos testes em máquinas virtuais (VMs):
+\begin{itemize}
+    \item \textbf{Linux (Ubuntu/Debian):} Utilização do servidor de áudio \textbf{JACK/PipeWire} e monitoramento via \texttt{htop} para análise do escalonamento de processos e prioridades de tempo real no Linux.
+    \item \textbf{macOS:} Análise do comportamento do subsistema \textbf{Core Audio} e sua interação com a memória física em comparação ao modelo ASIO.
+\end{itemize}
+
+\subsection{Análise de Estresse Matemático (CPU-bound)}
+Após a consolidação da linha de base, o projeto prevê a introdução de cargas de processamento de ponto flutuante (\textit{FPU stress}) através de algoritmos de convolução (\textit{Reverbs}) e síntese granular, visando observar o ponto de ruptura (\textit{buffer underrun}) e a estabilidade do sistema sob regime de alta concorrência de \textit{threads}.
 
 \chapter{Resultados}
 % Apresentar os dados brutos extraídos das análises.
