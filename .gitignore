@@ -8,6 +8,7 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.brf
 
 # Bibliografia e Glossários
 *.bbl
@@ -21,5 +22,5 @@
 .vscode/
 *.swp
 
-# Ignorar PDFs gerados durante o rascunho (descomente se quiser)
-# *.pdf
+# Ignorar PDFs gerados durante o rascunho
+*.pdf
