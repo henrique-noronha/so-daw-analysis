@@ -296,253 +296,144 @@ baixa latência.
 % ----------------------------------------------------------------------------------------------------- %
 \chapter{Metodologia}
 
-O presente estudo adota uma abordagem quantitativa e comparativa para analisar
-o gerenciamento de recursos e o desempenho de \textit{Digital Audio Workstations}
-(DAWs) sob a ótica de Sistemas Operacionais. O foco reside na interação entre
-o \textit{kernel} do Windows e os motores de áudio do \textbf{Ableton Live 12}
-e \textbf{FL Studio 24}.
+O estudo adota abordagem quantitativa e comparativa para analisar o
+gerenciamento de recursos de \textit{Digital Audio Workstations} (DAWs) sob
+a ótica de Sistemas Operacionais, focando na interação entre o
+\textit{kernel} do Windows~11 (build~26200, x64) e os motores de áudio do
+\textbf{Ableton~Live~12} e do \textbf{FL~Studio~24}. Os experimentos foram
+conduzidos em um notebook ASUS Vivobook K3605ZF equipado com processador
+Intel Core i5-12500H (12~núcleos, 16~\textit{threads}, base 3,1~GHz),
+16~GB de RAM DDR4 e GPU NVIDIA (driver \texttt{nvlddmkm.sys} v581.29). Para
+preservar as escolhas arquiteturais nativas de cada fabricante, o
+FL~Studio operou com o driver \textit{FL~Studio ASIO} e o Ableton~Live com
+\textit{MME/DirectX}; o \textit{Fruity Limiter} do canal Master do
+FL~Studio foi removido antes dos testes para garantir paridade de cadeia de
+sinal. O Windows Defender permaneceu ativo em todas as sessões, em condições
+idênticas para ambas as DAWs.
 
-\section{Ambiente de Teste e Isolamento de Variáveis}
+A coleta de dados foi realizada com três ferramentas complementares. O
+\textbf{Performance Monitor} (PerfMon) capturou contadores do
+\textit{kernel} a 1~Hz --- \texttt{\% Tempo de Processador},
+\texttt{Private Bytes} e \texttt{Contagem de Threads} por processo ---
+exportados via \texttt{relog} para formato \texttt{.csv}
+\cite{microsoft2023perfmon}. O \textbf{Process Explorer} (Sysinternals)
+forneceu inspeção das \textit{threads} individuais, suas prioridades de
+escalonamento e consumo de CPU por unidade de execução. O
+\textbf{LatencyMon v7.31} \cite{asio4all} mediu latência
+\textit{interrupt-to-process}, tempos de rotinas DPC e ISR e contagem de
+\textit{hard pagefaults} em nível de sistema.
 
-Para garantir a reprodutibilidade, o ambiente foi configurado para minimizar
-a interferência de processos em segundo plano. Os testes foram executados em
-um notebook \textbf{ASUS Vivobook K3605ZF} com as seguintes especificações:
-
-\begin{itemize}
-    \item \textbf{Processador:} Intel Core i5-12500H (12ª geração) ---
-    12~núcleos (4 núcleos de desempenho + 8 núcleos de eficiência),
-    16~\textit{threads}, frequência base de 3,1~GHz e \textit{boost} de até
-    4,5~GHz.
-    \item \textbf{Memória RAM:} 16~GB DDR4.
-    \item \textbf{GPU:} NVIDIA (driver \texttt{nvlddmkm.sys} v581.29),
-    relevante para a análise de DPCs do Teste~4.
-    \item \textbf{Sistema Operacional:} Windows 11 (build 26200, x64).
-    \item \textbf{Camada de Abstração de Áudio:} Cada DAW foi testada com seu
-    driver de áudio nativo. O FL~Studio utilizou o \textit{FL Studio ASIO};
-    o Ableton~Live utilizou seu driver nativo padrão (DirectSound/MME).
-    \item \textbf{Configuração de saída:} O \textit{Fruity Limiter} nativo do
-    FL~Studio foi removido do canal Master antes dos testes, garantindo
-    paridade com a arquitetura aditiva do Ableton~Live.
-    \item \textbf{Antivírus:} O Windows Defender permaneceu ativo em todos os
-    testes, em condições idênticas para ambas as DAWs.
-\end{itemize}
-
-\section{Instrumentação e Coleta de Métricas}
-
-\begin{itemize}
-    \item \textbf{Performance Monitor (PerfMon):} Ferramenta nativa do Windows
-    utilizada para capturar contadores do \textit{kernel} a 1~Hz, exportados
-    via \texttt{relog} para formato \texttt{.csv} \cite{microsoft2023perfmon}.
-    Métricas coletadas:
-    \begin{itemize}
-        \item \texttt{\% Tempo de Processador} (\texttt{\_Total})
-        \item \texttt{Bytes Particulares (Private Bytes)} por processo
-        \item \texttt{Contagem de Threads} por processo
-    \end{itemize}
-    \item \textbf{Process Explorer (Sysinternals):} Inspeção detalhada de
-    \textit{threads} individuais, prioridades de escalonamento e consumo de
-    CPU por \textit{thread}.
-    \item \textbf{LatencyMon v7.31 (Resplendence):} Medição de latência de
-    rotinas DPC e ISR, latência \textit{interrupt-to-process} e contagem de
-    \textit{hard pagefaults} em nível de sistema.
-\end{itemize}
-
-\section{Protocolo de Teste 1: Consumo em Repouso (\textit{Idle})}
-
-DAW aberta sem projeto carregado. Coleta de 2,5 minutos a 1~Hz via PerfMon.
-
-\section{Protocolo de Teste 2: Carga \textit{I/O-bound} com 20 Trilhas AIFF}
-
-Reprodução simultânea em \textit{loop} de 20 trilhas de áudio no formato
-\textbf{AIFF} (PCM não comprimido), evitando ciclos de CPU destinados à
-descompressão. Coleta de 3 minutos a 1~Hz.
-
-\section{Protocolo de Teste 3: Escalonamento de \textit{Threads}}
-
-Inspeção via \textit{Process Explorer} com o projeto de 20~trilhas em
-reprodução. Registraram-se: total de \textit{threads} ativas, prioridade base
-e dinâmica da \textit{thread} principal, módulos de origem das
-\textit{threads} e CPU consumida por \textit{thread}.
-
-\section{Protocolo de Teste 4: Latência com Driver Nativo (LatencyMon)}
-
-Medição da latência de driver com o \textbf{LatencyMon v7.31}, executado
-durante 2 minutos e 50 segundos com o projeto de 20 trilhas AIFF em
-reprodução em cada DAW, utilizando os drivers nativos sem alteração de
-configurações de \textit{buffer}. O Windows Defender permaneceu ativo em
-ambos os testes, garantindo paridade de condições. Métricas coletadas:
-latência máxima e média \textit{interrupt-to-process}, tempo máximo de
-rotinas DPC e ISR, percentual de CPU em DPCs/ISRs e contagem total de
-\textit{hard pagefaults}.
-
-\section{Protocolo de Teste 5: Estresse CPU-bound e Ponto de Ruptura}
-
-Introdução de carga de processamento intensivo via 5~instâncias do plugin
-de reverb nativo de cada DAW inseridas no canal Master, com configuração
-padrão de fábrica. Com as 20~trilhas AIFF em reprodução simultânea e os
-reverbs ativos, o \textit{buffer size} foi reduzido progressivamente
-(4096 $\rightarrow$ 2048 $\rightarrow$ 1024 $\rightarrow$ 512 $\rightarrow$
-256 $\rightarrow$ 128~\textit{samples}), aguardando 20~segundos em cada
-etapa. O ponto de ruptura (\textit{buffer underrun}) foi identificado pela
-ocorrência de \textit{clicks}, \textit{pops} ou cortes no sinal de áudio.
-O FL~Studio utilizou o driver \textbf{FL Studio ASIO}; o Ableton~Live
-utilizou \textbf{MME/DirectX}, preservando as escolhas nativas de cada
-fabricante.
+O protocolo experimental compreendeu cinco testes sequenciais. O
+\textbf{Teste~1} (repouso) coletou dados com a DAW aberta e sem projeto
+carregado por 2,5~minutos. O \textbf{Teste~2} (carga \textit{I/O-bound})
+adicionou a reprodução simultânea em \textit{loop} de 20~trilhas AIFF
+(PCM não comprimido) por 3~minutos. O \textbf{Teste~3} (escalonamento)
+inspecionou via Process Explorer a composição, prioridade e distribuição de
+\textit{threads} com o projeto ativo. O \textbf{Teste~4} (latência) executou
+o LatencyMon por 2~min~50~s sobre o mesmo projeto, registrando DPCs, ISRs e
+\textit{pagefaults}. Por fim, o \textbf{Teste~5} (estresse CPU-bound)
+introduziu cinco instâncias do reverb nativo de cada DAW no canal Master e
+reduziu progressivamente o \textit{buffer size} de 4096 até
+128~\textit{samples}, identificando o ponto de ruptura (\textit{buffer
+underrun}) pela ocorrência de \textit{dropouts} audíveis.
 
 
 % ----------------------------------------------------------------------------------------------------- %
 \chapter{Resultados}
 
-\section{Teste 1 --- Consumo em Repouso (\textit{Idle})}
+\section{Testes 1 e 2 --- Consumo em Repouso e Carga \textit{I/O-bound}}
 
-O Teste~1 estabeleceu o consumo de recursos de ambas as DAWs sem nenhum
-projeto carregado. Os dados foram coletados durante aproximadamente 2,5~minutos,
-resultando em 146 amostras válidas para o Ableton~Live~12 e 145 para o
-FL~Studio~24.
+Os Testes~1 e~2 avaliaram o comportamento de CPU, memória e
+\textit{threads} em dois cenários consecutivos: DAW em repouso (sem projeto)
+e com reprodução simultânea de 20~trilhas AIFF em \textit{loop}. Os dados,
+amostrados a 1~Hz via PerfMon durante 2,5 e 3~minutos respectivamente, estão
+consolidados nas Tabelas~\ref{tab:t1} e~\ref{tab:t2}.
 
 \begin{table}[ht]
 \centering
-\caption{Resumo estatístico --- Teste~1: consumo em repouso}
+\caption{Resumo estatístico --- Teste~1 (repouso) e Teste~2 (20 trilhas AIFF)}
 \label{tab:t1}
-\begin{tabular}{llccc}
+\begin{tabular}{llcccc}
 \toprule
-\textbf{Métrica} & \textbf{DAW} & \textbf{Mínimo} & \textbf{Média} & \textbf{Máximo} \\
+\textbf{Teste} & \textbf{Métrica} & \textbf{DAW} & \textbf{Mín.} & \textbf{Média} & \textbf{Máx.} \\
 \midrule
-\multirow{2}{*}{\% CPU}
-  & Ableton Live 12  & 0{,}00\% & 10{,}95\% & 33{,}73\% \\
-  & FL Studio (FL64) & 0{,}00\% & 12{,}38\% & 37{,}72\% \\
+\multirow{6}{*}{T1 — Repouso}
+  & \multirow{2}{*}{\% CPU}
+    & Ableton Live 12  & 0{,}00\% & 10{,}95\% & 33{,}73\% \\
+  & & FL Studio (FL64) & 0{,}00\% & 12{,}38\% & 37{,}72\% \\
+\cmidrule{2-6}
+  & \multirow{2}{*}{Private Bytes (MB)}
+    & Ableton Live 12  & 338{,}6 & 536{,}8 & 538{,}3 \\
+  & & FL Studio (FL64) &  95{,}6 &  95{,}8 &  95{,}8 \\
+\cmidrule{2-6}
+  & \multirow{2}{*}{Threads ativas}
+    & Ableton Live 12  &  8 & 54{,}8 & 56 \\
+  & & FL Studio (FL64) & 44 & 44{,}0 & 45 \\
 \midrule
-\multirow{2}{*}{Private Bytes (MB)}
-  & Ableton Live 12  & 338{,}6 & 536{,}8 & 538{,}3 \\
-  & FL Studio (FL64) &  95{,}6 &  95{,}8 &  95{,}8 \\
-\midrule
-\multirow{2}{*}{Threads ativas}
-  & Ableton Live 12  &  8 & 54{,}8 & 56 \\
-  & FL Studio (FL64) & 44 & 44{,}0 & 45 \\
+\multirow{6}{*}{T2 — 20 trilhas}
+  & \multirow{2}{*}{\% CPU}
+    & Ableton Live 12  & 0{,}00\% &  3{,}74\% & 20{,}11\% \\
+  & & FL Studio (FL64) & 0{,}00\% &  4{,}80\% & 31{,}16\% \\
+\cmidrule{2-6}
+  & \multirow{2}{*}{Private Bytes (MB)}
+    & Ableton Live 12  & 601{,}6 & 601{,}7 & 604{,}5 \\
+  & & FL Studio (FL64) & 137{,}6 & 147{,}6 & 147{,}6 \\
+\cmidrule{2-6}
+  & \multirow{2}{*}{Threads ativas}
+    & Ableton Live 12  & 54 & 55{,}3 & 56 \\
+  & & FL Studio (FL64) & 26 & 27{,}0 & 28 \\
 \bottomrule
-\multicolumn{5}{l}{\footnotesize Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
+\multicolumn{6}{l}{\footnotesize Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
 \end{tabular}
 \end{table}
 
-\subsection{CPU em repouso}
-
-O FL~Studio registrou média de $12{,}38\%$, ligeiramente superior ao
-Ableton~Live ($10{,}95\%$), com pico máximo de $37{,}72\%$ frente a $33{,}73\%$.
-A diferença é sistemática ao longo de toda a sessão (Figura~\ref{fig:t1cpu}),
-evidenciando processos internos contínuos mesmo sem projeto ativo.
+Em repouso, o FL~Studio consumiu CPU média ligeiramente superior
+($12{,}38\%$ vs.\ $10{,}95\%$), enquanto o Ableton~Live alocou $5{,}6\times$
+mais memória ($536{,}8$~MB vs.\ $95{,}8$~MB) e manteve o dobro de
+\textit{threads} ativas (54,8 vs.\ 44,0). Com 20~trilhas em reprodução,
+ambas as DAWs reduziram o consumo médio de CPU --- Ableton de $10{,}95\%$
+para $3{,}74\%$ e FL~Studio de $12{,}38\%$ para $4{,}80\%$ --- ao passo que
+a memória cresceu moderadamente ($+64{,}9$~MB no Ableton,
+$+51{,}8$~MB no FL~Studio). O FL~Studio reduziu sua contagem de
+\textit{threads} de 44 para 27 ao carregar o projeto ($-38\%$), enquanto o
+Ableton permaneceu estável ($54{,}8 \rightarrow 55{,}3$). As
+Figuras~\ref{fig:t1cpu}--\ref{fig:t2thr} ilustram esses comportamentos.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.95\textwidth]{grafico_cpu}
-\caption{Consumo de CPU em repouso --- Teste~1.}
+\caption{CPU em repouso ao longo do Teste~1.}
 \label{fig:t1cpu}
 \par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
 \end{figure}
 
-\subsection{RAM em repouso}
-
-O Ableton~Live alocou em média $536{,}8$~MB em repouso, valor $5{,}6\times$
-superior ao FL~Studio ($95{,}8$~MB), que manteve consumo praticamente constante
-(variação $< 0{,}2$~MB) (Figura~\ref{fig:t1ram}).
-
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.65\textwidth]{grafico_ram}
-\caption{Uso de RAM (\textit{Private Bytes}) em repouso --- Teste~1.}
+\includegraphics[width=0.48\textwidth]{grafico_ram}
+\hfill
+\includegraphics[width=0.48\textwidth]{grafico_threads}
+\caption{RAM (\textit{Private Bytes}) e \textit{threads} em repouso --- Teste~1.}
 \label{fig:t1ram}
 \par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
 \end{figure}
 
-\subsection{\textit{Threads} em repouso}
-
-O Ableton~Live manteve em média $54{,}8$~\textit{threads} ativas em repouso,
-contra $44$~\textit{threads} estáveis do FL~Studio (Figura~\ref{fig:t1thr}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.65\textwidth]{grafico_threads}
-\caption{Contagem de \textit{threads} em repouso --- Teste~1.}
-\label{fig:t1thr}
-\par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
-\end{figure}
-
-% ---------------------------------------------------------------- %
-\section{Teste 2 --- Carga \textit{I/O-bound}: 20 Trilhas AIFF}
-
-O Teste~2 introduziu carga de trabalho real com a reprodução simultânea em
-\textit{loop} de 20 trilhas de áudio AIFF (PCM não comprimido). Foram
-coletadas 178 amostras para o Ableton~Live~12 e 169 para o FL~Studio~24,
-durante aproximadamente 3~minutos cada.
-
-\begin{table}[ht]
-\centering
-\caption{Resumo estatístico --- Teste~2: 20 trilhas AIFF em reprodução}
-\label{tab:t2}
-\begin{tabular}{llccc}
-\toprule
-\textbf{Métrica} & \textbf{DAW} & \textbf{Mínimo} & \textbf{Média} & \textbf{Máximo} \\
-\midrule
-\multirow{2}{*}{\% CPU}
-  & Ableton Live 12  & 0{,}00\% &  3{,}74\% & 20{,}11\% \\
-  & FL Studio (FL64) & 0{,}00\% &  4{,}80\% & 31{,}16\% \\
-\midrule
-\multirow{2}{*}{Private Bytes (MB)}
-  & Ableton Live 12  & 601{,}6 & 601{,}7 & 604{,}5 \\
-  & FL Studio (FL64) & 137{,}6 & 147{,}6 & 147{,}6 \\
-\midrule
-\multirow{2}{*}{Threads ativas}
-  & Ableton Live 12  & 54 & 55{,}3 & 56 \\
-  & FL Studio (FL64) & 26 & 27{,}0 & 28 \\
-\bottomrule
-\multicolumn{5}{l}{\footnotesize Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
-\end{tabular}
-\end{table}
-
-\subsection{CPU com 20 trilhas}
-
-Com a carga \textit{I/O-bound} ativa, ambas as DAWs apresentaram redução
-expressiva no consumo médio de CPU em relação ao repouso: o Ableton~Live caiu
-de $10{,}95\%$ para $3{,}74\%$ ($-6{,}21$~pp) e o FL~Studio de $12{,}38\%$
-para $4{,}80\%$ ($-7{,}58$~pp). A Figura~\ref{fig:t2cpu} ilustra o
-comportamento ao longo do teste, e a Figura~\ref{fig:t2cpucomp} compara os
-dois cenários.
-
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.95\textwidth]{t2_grafico_cpu}
-\caption{Consumo de CPU durante reprodução de 20 trilhas AIFF --- Teste~2.}
+\caption{CPU durante reprodução de 20 trilhas AIFF --- Teste~2.}
 \label{fig:t2cpu}
 \par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
 \end{figure}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.70\textwidth]{t2_cpu_comparativo}
-\caption{CPU média comparativa: repouso (Teste~1) vs.\ 20 trilhas (Teste~2).}
+\includegraphics[width=0.48\textwidth]{t2_cpu_comparativo}
+\hfill
+\includegraphics[width=0.48\textwidth]{t2_ram_comparativo}
+\caption{CPU e RAM médias comparativas: repouso (T1) vs.\ 20 trilhas (T2).}
 \label{fig:t2cpucomp}
 \par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
 \end{figure}
-
-\subsection{RAM com 20 trilhas}
-
-O Ableton~Live elevou seu consumo de $536{,}8$~MB para $601{,}7$~MB
-($+64{,}9$~MB). O FL~Studio partiu de $95{,}8$~MB e estabilizou em
-$147{,}6$~MB ($+51{,}8$~MB). O Ableton consumiu $4{,}1\times$ mais RAM que
-o FL~Studio com 20 trilhas ativas (Figura~\ref{fig:t2ram}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.70\textwidth]{t2_ram_comparativo}
-\caption{RAM média comparativa: repouso (Teste~1) vs.\ 20 trilhas (Teste~2).}
-\label{fig:t2ram}
-\par\footnotesize{Fonte: dados coletados pelos autores via PerfMon, 26 maio 2026.}
-\end{figure}
-
-\subsection{\textit{Threads} com 20 trilhas}
-
-O FL~Studio reduziu sua contagem de $44$ para $27$~\textit{threads} ao
-carregar o projeto ($-38\%$), enquanto o Ableton~Live manteve-se estável
-($54{,}8 \rightarrow 55{,}3$) (Figura~\ref{fig:t2thr}).
 
 \begin{figure}[ht]
 \centering
@@ -553,11 +444,19 @@ carregar o projeto ($-38\%$), enquanto o Ableton~Live manteve-se estável
 \end{figure}
 
 % ---------------------------------------------------------------- %
-\section{Teste 3 --- Escalonamento de \textit{Threads} (Process Explorer)}
+\section{Teste 3 --- Escalonamento de \textit{Threads}}
 
-O Teste~3 inspecionou a composição interna de \textit{threads} de cada DAW
-com o projeto de 20 trilhas AIFF em reprodução ativa via \textit{Process
-Explorer}. A Tabela~\ref{tab:t3} resume os dados coletados.
+A inspeção via Process Explorer com o projeto em reprodução revelou
+diferenças relevantes na composição e prioridade de \textit{threads}
+(Tabela~\ref{tab:t3}). O FL~Studio opera com prioridade base~10
+(\textit{Above Normal}) e dinâmica~12 (\textit{High}), contra base~8
+(\textit{Normal}) e dinâmica~10 do Ableton~Live. Nenhuma das DAWs atingiu
+o nível \textit{Time Critical} (15). Em relação à composição, 14 das
+29~\textit{threads} do FL~Studio pertencem ao módulo \texttt{QuickFontCache}
+(renderização de UI), com apenas 5 associadas ao \texttt{FLEngine\_x64}
+(motor de áudio); no Ableton~Live, ${\approx}30$ das 55~\textit{threads}
+provêm do \texttt{ucrtbase.dll} (\textit{thread pool} do C runtime). As
+Figuras~\ref{fig:t3prio} e~\ref{fig:t3comp} detalham esses dados.
 
 \begin{table}[ht]
 \centering
@@ -567,41 +466,25 @@ Explorer}. A Tabela~\ref{tab:t3} resume os dados coletados.
 \toprule
 \textbf{Parâmetro} & \textbf{FL Studio (FL64)} & \textbf{Ableton Live 12} \\
 \midrule
-Total de \textit{threads}          & 29                & 55                \\
-Prioridade base (thread principal) & 10 (Above Normal) & 8 (Normal)        \\
-Prioridade dinâmica                & 12 (High)         & 10 (Above Normal) \\
-CPU da thread principal            & 0{,}93\%          & 0{,}75\%          \\
-Thread \textit{Time Critical} (15)?& Não               & Não               \\
-Módulo dominante                   & QuickFontCache    & ucrtbase          \\
-Thread de driver de áudio          & ilwasapi2asio\_x64& DSOUND.dll        \\
+Total de \textit{threads}           & 29                & 55                \\
+Prioridade base (thread principal)  & 10 (Above Normal) & 8 (Normal)        \\
+Prioridade dinâmica                 & 12 (High)         & 10 (Above Normal) \\
+CPU da thread principal             & 0{,}93\%          & 0{,}75\%          \\
+Thread \textit{Time Critical} (15)? & Não               & Não               \\
+Módulo dominante                    & QuickFontCache    & ucrtbase          \\
+Thread de driver de áudio           & ilwasapi2asio\_x64& DSOUND.dll        \\
 \bottomrule
 \multicolumn{3}{l}{\footnotesize Fonte: dados coletados pelos autores via Process Explorer, 26 maio 2026.}
 \end{tabular}
 \end{table}
 
-\subsection{Prioridade de escalonamento}
-
-O FL~Studio agenda sua \textit{thread} principal com prioridade base~10
-(\textit{Above Normal}) e dinâmica~12 (\textit{High}), enquanto o
-Ableton~Live utiliza base~8 (\textit{Normal}) e dinâmica~10. Nenhuma das
-duas DAWs atingiu o nível \textit{Time Critical} (15)
-(Figura~\ref{fig:t3prio}).
-
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.80\textwidth]{t3_prioridades}
+\includegraphics[width=0.75\textwidth]{t3_prioridades}
 \caption{Prioridades de escalonamento da \textit{thread} principal --- Teste~3.}
 \label{fig:t3prio}
 \par\footnotesize{Fonte: dados coletados pelos autores via Process Explorer, 26 maio 2026.}
 \end{figure}
-
-\subsection{Composição de \textit{threads} por módulo}
-
-No FL~Studio, 14 das 29~\textit{threads} pertencem ao \texttt{QuickFontCache}
-(renderização de fontes da UI) e apenas 5 ao \texttt{FLEngine\_x64} (motor de
-áudio). No Ableton~Live, ${\approx}30$ das 55~\textit{threads} provêm do
-\texttt{ucrtbase.dll} (\textit{thread pool} do C runtime), com o driver de
-áudio representado por \texttt{DSOUND.dll} (Figura~\ref{fig:t3comp}).
 
 \begin{figure}[ht]
 \centering
@@ -612,11 +495,18 @@ No FL~Studio, 14 das 29~\textit{threads} pertencem ao \texttt{QuickFontCache}
 \end{figure}
 
 % ---------------------------------------------------------------- %
-\section{Teste 4 --- Latência com Driver Nativo (LatencyMon)}
+\section{Teste 4 --- Latência com Driver Nativo}
 
-O Teste~4 mediu a latência de \textit{interrupt-to-process} e o comportamento
-de rotinas DPC e ISR durante a reprodução das 20 trilhas AIFF, com duração de
-2 minutos e 50 segundos por DAW. A Tabela~\ref{tab:t4} apresenta o resumo.
+O LatencyMon classificou o sistema como \textbf{apto} durante a sessão do
+Ableton~Live e \textbf{não apto} durante a do FL~Studio
+(Tabela~\ref{tab:t4}). A latência máxima \textit{interrupt-to-process}
+atingiu $805{,}40\,\mu$s no Ableton e $5274{,}90\,\mu$s no FL~Studio
+($6{,}5\times$ superior). O maior DPC no FL~Studio foi atribuído ao driver
+NVIDIA \texttt{nvlddmkm.sys} ($551{,}84\,\mu$s); o processo com maior
+contagem de \textit{hard pagefaults} foi o \texttt{msmpeng.exe} (Windows
+Defender) em ambos os testes. O FL~Studio registrou também maior
+percentual de CPU em DPCs ($0{,}111\%$ vs.\ $0{,}074\%$) e ISRs
+($0{,}045\%$ vs.\ $0{,}023\%$).
 
 \begin{table}[ht]
 \centering
@@ -626,111 +516,71 @@ de rotinas DPC e ISR durante a reprodução das 20 trilhas AIFF, com duração d
 \toprule
 \textbf{Métrica} & \textbf{Ableton Live 12} & \textbf{FL Studio (FL64)} \\
 \midrule
-Conclusão do sistema              & \textbf{Apto}     & \textbf{Não apto} \\
-Latência máx. int.-to-proc. ($\mu$s) & 805{,}40       & 5274{,}90         \\
-Latência méd. int.-to-proc. ($\mu$s) &    8{,}50      &   14{,}68         \\
-DPC máximo ($\mu$s)               & 449{,}81          & 551{,}84          \\
-ISR máximo ($\mu$s)               & 267{,}52          & 267{,}35          \\
-Tempo total em DPCs (\%)          & 0{,}074           & 0{,}111           \\
-Tempo total em ISRs (\%)          & 0{,}023           & 0{,}045           \\
-\textit{Hard pagefaults} totais   & 306               & 380               \\
-Driver com maior DPC              & \texttt{tcpip.sys}& \texttt{nvlddmkm.sys} \\
-Driver com maior ISR              & \multicolumn{2}{c}{\texttt{Wdf01000.sys}} \\
+Conclusão do sistema                 & \textbf{Apto}      & \textbf{Não apto}  \\
+Latência máx. int.-to-proc. ($\mu$s) & 805{,}40           & 5274{,}90          \\
+Latência méd. int.-to-proc. ($\mu$s) &    8{,}50          &   14{,}68          \\
+DPC máximo ($\mu$s)                  & 449{,}81           & 551{,}84           \\
+ISR máximo ($\mu$s)                  & 267{,}52           & 267{,}35           \\
+Tempo total em DPCs (\%)             & 0{,}074            & 0{,}111            \\
+Tempo total em ISRs (\%)             & 0{,}023            & 0{,}045            \\
+\textit{Hard pagefaults} totais      & 306                & 380                \\
+Driver com maior DPC                 & \texttt{tcpip.sys} & \texttt{nvlddmkm.sys} \\
 \bottomrule
 \multicolumn{3}{l}{\footnotesize Fonte: dados coletados pelos autores via LatencyMon v7.31, 26 maio 2026.}
 \end{tabular}
 \end{table}
-
-\subsection{Latência \textit{interrupt-to-process}}
-
-O Ableton~Live registrou pico de $805{,}40\,\mu$s --- dentro do limiar
-aceitável para áudio em tempo real. O FL~Studio atingiu $5274{,}90\,\mu$s
-($6{,}5\times$ maior), levando o LatencyMon a classificar o sistema como
-\textit{não apto}, com risco de \textit{buffer underruns}
-(Figura~\ref{fig:t4lat}). O driver responsável pelo maior DPC no FL~Studio
-foi o \texttt{nvlddmkm.sys} (NVIDIA, $551{,}84\,\mu$s), e o processo com
-maior contagem de \textit{hard pagefaults} foi o \texttt{msmpeng.exe}
-(Windows Defender) em ambos os testes.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.48\textwidth]{LatencyMonMainLive}
 \hfill
 \includegraphics[width=0.48\textwidth]{LatencyMonMainFL}
-\caption{Tela principal do LatencyMon --- Ableton~Live~12 (esquerda, conclusão
-         verde: apto) e FL~Studio (direita, conclusão vermelha: não apto).
-         Latência máxima \textit{interrupt-to-process}: $805\,\mu$s vs.\
-         $5274\,\mu$s.}
+\caption{Tela principal do LatencyMon --- Ableton~Live~12 (esquerda, apto)
+         e FL~Studio (direita, não apto).}
 \label{fig:t4lat}
 \par\footnotesize{Fonte: dados coletados pelos autores via LatencyMon v7.31, 26 maio 2026.}
 \end{figure}
 
-\subsection{\textit{Hard pagefaults} e tempo de CPU em DPCs/ISRs}
-
-O FL~Studio registrou maior contagem de \textit{hard pagefaults} (380 vs.\
-306) e maior percentual de CPU em DPCs ($0{,}111\%$ vs.\ $0{,}074\%$) e
-ISRs ($0{,}045\%$ vs.\ $0{,}023\%$) (Figura~\ref{fig:t4pf}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.48\textwidth]{LatencyMonStatsLive}
-\hfill
-\includegraphics[width=0.48\textwidth]{LatencyMonStatsFL}
-\caption{Relatório detalhado do LatencyMon --- Ableton~Live~12 (esquerda)
-         e FL~Studio (direita). Detalhe para os \textit{hard pagefaults}
-         (306 vs.\ 380) e o driver \texttt{nvlddmkm.sys} (NVIDIA) como
-         principal responsável pelo DPC elevado no FL~Studio.}
-\label{fig:t4pf}
-\par\footnotesize{Fonte: dados coletados pelos autores via LatencyMon v7.31, 26 maio 2026.}
-\end{figure}
 
 
 % ---------------------------------------------------------------- %
 \section{Teste 5 --- Estresse CPU-bound e Ponto de Ruptura}
 
-O Teste~5 introduziu carga de processamento de ponto flutuante por meio de
-5~instâncias do reverb nativo de cada DAW no canal Master, combinadas à
-reprodução das 20~trilhas AIFF. O \textit{buffer size} foi reduzido
-progressivamente até o surgimento de \textit{dropouts} audíveis. A
-Tabela~\ref{tab:t5} sintetiza os resultados.
+Com cinco instâncias de reverb ativas no canal Master e 20~trilhas em
+reprodução, o \textit{buffer size} foi reduzido progressivamente até o
+surgimento de \textit{dropouts} audíveis (Tabela~\ref{tab:t5}). O
+FL~Studio (ASIO) sustentou operação estável até $256$~\textit{samples}
+($6$~ms), com ruptura em $128$~\textit{samples}. O Ableton~Live
+(MME/DirectX) iniciou os cortes em $1024$~\textit{samples} ($23{,}2$~ms),
+com degradação progressiva nos valores subsequentes. As
+Figuras~\ref{fig:t5lat} e~\ref{fig:t5comp} sintetizam o comportamento.
 
 \begin{table}[ht]
 \centering
 \caption{Ponto de ruptura --- Teste~5 (estresse CPU-bound)}
 \label{tab:t5}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
 \textbf{Buffer (smp)} & \textbf{Latência (ms)} &
 \textbf{FL Studio (ASIO)} & \textbf{Ableton (MME/DirectX)} \\
 \midrule
-4096 & 92{,}9 & ---         & Estável     \\
-2048 & 46{,}4 & ---         & Estável     \\
-1024 & 23{,}2 & ---         & \textbf{Glitch} \\
- 512 & 11{,}6 & Estável     & Glitch piora\\
- 384 &  9{,}0 & Estável     & ---         \\
- 256 &  5{,}8 & \textbf{Mínimo estável} & Glitch forte\\
- 128 &  2{,}9 & \textbf{Glitch}         & ---         \\
+4096 & 92{,}9 & ---                     & Estável         \\
+2048 & 46{,}4 & ---                     & Estável         \\
+1024 & 23{,}2 & ---                     & \textbf{Glitch} \\
+ 512 & 11{,}6 & Estável                 & Glitch piora    \\
+ 384 &  9{,}0 & Estável                 & ---             \\
+ 256 &  5{,}8 & \textbf{Mínimo estável} & Glitch forte    \\
+ 128 &  2{,}9 & \textbf{Glitch}         & ---             \\
 \bottomrule
 \multicolumn{4}{l}{\footnotesize Fonte: dados coletados pelos autores, 27 maio 2026.}
 \end{tabular}
 \end{table}
 
-\subsection{Ponto de ruptura por driver}
-
-O FL~Studio, operando com o driver \textbf{FL Studio ASIO}, manteve-se
-estável até $256$~\textit{samples} ($6$~ms), apresentando \textit{dropout}
-apenas ao atingir $128$~\textit{samples}. O Ableton~Live, utilizando
-\textbf{MME/DirectX}, iniciou os cortes já em $1024$~\textit{samples}
-($23{,}2$~ms), com degradação progressiva até $256$~\textit{samples}.
-A Figura~\ref{fig:t5lat} ilustra a relação entre \textit{buffer size} e
-latência ao longo do teste, com os pontos de ruptura assinalados.
-
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.95\textwidth]{t5_buffer_latencia}
-\caption{Buffer size vs.\ latência ao longo do Teste~5. O marcador
-         $\times$ indica o ponto de ocorrência de \textit{dropout} audível
-         em cada DAW.}
+\caption{Buffer size vs.\ latência ao longo do Teste~5. O marcador $\times$
+         indica o ponto de \textit{dropout} em cada DAW.}
 \label{fig:t5lat}
 \par\footnotesize{Fonte: dados coletados pelos autores, 27 maio 2026.}
 \end{figure}
@@ -738,18 +588,13 @@ latência ao longo do teste, com os pontos de ruptura assinalados.
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.75\textwidth]{t5_ruptura_comparativo}
-\caption{Comparativo do \textit{buffer} mínimo estável e latência
-         correspondente --- Teste~5.}
+\caption{Buffer mínimo estável e latência correspondente --- Teste~5.}
 \label{fig:t5comp}
 \par\footnotesize{Fonte: dados coletados pelos autores, 27 maio 2026.}
 \end{figure}
 
-\section{Consumo de CPU e Comportamento Multithread}
-
-\section{Análise de Latência e Buffer}
-
-
 % ----------------------------------------------------------------------------------------------------- %
+
 \chapter{Discussão}
 
 \section{Análise Comparativa --- Teste~1 (Repouso)}
