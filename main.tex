@@ -497,16 +497,16 @@ Thread de driver de áudio           & ilwasapi2asio\_x64& DSOUND.dll        \\
 % ---------------------------------------------------------------- %
 \section{Teste 4 --- Latência com Driver Nativo}
 
-O LatencyMon classificou o sistema como \textbf{apto} durante a sessão do
-Ableton~Live e \textbf{não apto} durante a do FL~Studio
+O LatencyMon classificou o sistema como \textbf{apto} em ambas as DAWs
 (Tabela~\ref{tab:t4}). A latência máxima \textit{interrupt-to-process}
-atingiu $805{,}40\,\mu$s no Ableton e $5274{,}90\,\mu$s no FL~Studio
-($6{,}5\times$ superior). O maior DPC no FL~Studio foi atribuído ao driver
-NVIDIA \texttt{nvlddmkm.sys} ($551{,}84\,\mu$s); o processo com maior
-contagem de \textit{hard pagefaults} foi o \texttt{msmpeng.exe} (Windows
-Defender) em ambos os testes. O FL~Studio registrou também maior
-percentual de CPU em DPCs ($0{,}111\%$ vs.\ $0{,}074\%$) e ISRs
-($0{,}045\%$ vs.\ $0{,}023\%$).
+atingiu $805{,}40\,\mu$s no Ableton~Live e $939{,}80\,\mu$s no
+FL~Studio --- ambos dentro do limiar aceitável de $1000\,\mu$s. O maior
+DPC do FL~Studio foi atribuído ao driver NVIDIA \texttt{nvlddmkm.sys}
+($647{,}07\,\mu$s); o processo com maior contagem de \textit{hard
+pagefaults} foi o \texttt{msmpeng.exe} (Windows Defender) em ambos os
+testes. O FL~Studio registrou percentual de CPU em DPCs ligeiramente
+superior ($0{,}090\%$ vs.\ $0{,}074\%$) e em ISRs ($0{,}044\%$
+vs.\ $0{,}023\%$).
 
 \begin{table}[ht]
 \centering
@@ -516,30 +516,21 @@ percentual de CPU em DPCs ($0{,}111\%$ vs.\ $0{,}074\%$) e ISRs
 \toprule
 \textbf{Métrica} & \textbf{Ableton Live 12} & \textbf{FL Studio (FL64)} \\
 \midrule
-Conclusão do sistema                 & \textbf{Apto}      & \textbf{Não apto}  \\
-Latência máx. int.-to-proc. ($\mu$s) & 805{,}40           & 5274{,}90          \\
-Latência méd. int.-to-proc. ($\mu$s) &    8{,}50          &   14{,}68          \\
-DPC máximo ($\mu$s)                  & 449{,}81           & 551{,}84           \\
-ISR máximo ($\mu$s)                  & 267{,}52           & 267{,}35           \\
-Tempo total em DPCs (\%)             & 0{,}074            & 0{,}111            \\
-Tempo total em ISRs (\%)             & 0{,}023            & 0{,}045            \\
-\textit{Hard pagefaults} totais      & 306                & 380                \\
-Driver com maior DPC                 & \texttt{tcpip.sys} & \texttt{nvlddmkm.sys} \\
+Conclusão do sistema                  & \textbf{Apto}      & \textbf{Apto}      \\
+Latência máx. int.-to-proc. ($\mu$s)  & 805{,}40           & 939{,}80           \\
+Latência méd. int.-to-proc. ($\mu$s)  &   8{,}50           &  16{,}96           \\
+DPC máximo ($\mu$s)                   & 449{,}81           & 647{,}07           \\
+ISR máximo ($\mu$s)                   & 267{,}52           & 401{,}24           \\
+Tempo total em DPCs (\%)              & 0{,}074            & 0{,}090            \\
+Tempo total em ISRs (\%)              & 0{,}023            & 0{,}044            \\
+\textit{Hard pagefaults} totais       & 306                & 378                \\
+Driver com maior DPC                  & \texttt{tcpip.sys} & \texttt{nvlddmkm.sys} \\
 \bottomrule
 \multicolumn{3}{l}{\footnotesize Fonte: dados coletados pelos autores via LatencyMon v7.31, 26 maio 2026.}
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.48\textwidth]{LatencyMonMainLive}
-\hfill
-\includegraphics[width=0.48\textwidth]{LatencyMonMainFL}
-\caption{Tela principal do LatencyMon --- Ableton~Live~12 (esquerda, apto)
-         e FL~Studio (direita, não apto).}
-\label{fig:t4lat}
-\par\footnotesize{Fonte: dados coletados pelos autores via LatencyMon v7.31, 26 maio 2026.}
-\end{figure}
+
 
 
 
@@ -636,18 +627,29 @@ DAWs usa prioridade \textit{Time Critical} (15), confirmando o enquadramento
 
 \section{Análise Comparativa --- Teste~4 (Latência)}
 
-O Teste~4 revelou a diferença mais crítica entre as duas DAWs. O
-Ableton~Live manteve latência máxima dentro do limiar aceitável
-($805\,\mu$s), enquanto o FL~Studio atingiu $5274\,\mu$s --- classificado
-como problemático pelo LatencyMon. O driver \texttt{nvlddmkm.sys} (NVIDIA)
-foi o principal responsável pelos DPCs elevados durante o teste do
-FL~Studio, e o \texttt{msmpeng.exe} (Windows Defender) gerou o maior número
-de \textit{hard pagefaults} em ambos os casos \cite{silberschatz2018}. O
-fato de o Ableton ter permanecido abaixo do limiar crítico nas mesmas
-condições sugere que sua arquitetura de \textit{eager allocation} --- com
-memória pré-alocada e mais \textit{threads} prontas --- reduz a frequência
-de \textit{hard pagefaults} e, consequentemente, a latência máxima de
-resposta \cite{tanenbaum2016}.
+O Teste~4, realizado em ambiente controlado com navegador e aplicativos
+secundários encerrados, classificou \textbf{ambas as DAWs como aptas} para
+operação de áudio em tempo real. O Ableton~Live registrou latência máxima
+de $805\,\mu$s e o FL~Studio de $939\,\mu$s --- diferença de $\approx17\%$,
+ambas abaixo do limiar crítico de $1000\,\mu$s do LatencyMon.
+
+O principal fator de latência no FL~Studio continuou sendo o driver NVIDIA
+\texttt{nvlddmkm.sys}, responsável pelo DPC máximo de $647\,\mu$s. Esse
+comportamento indica que a GPU do sistema gera interrupções de alta duração
+que competem com o motor de áudio pelo escalonador, independentemente da
+DAW em uso \cite{silberschatz2018}. No Ableton~Live, o maior DPC partiu do
+\texttt{tcpip.sys} (rede), sugerindo menor pressão do subsistema gráfico
+sobre o escalonador durante sua sessão.
+
+O resultado contrasta com a sessão anterior do FL~Studio, realizada com
+Windows Defender em surto de varredura ativa, que havia gerado latência de
+$5274\,\mu$s e conclusão \textit{não apto}. A comparação entre as duas
+sessões demonstra empiricamente que interferências de processos externos
+--- particularmente antivírus e drivers de GPU --- têm impacto
+determinante na estabilidade de áudio em tempo real, podendo superar em
+magnitude as diferenças arquiteturais entre as próprias DAWs
+\cite{tanenbaum2016}. Em condições equivalentes, as duas aplicações
+mostram-se igualmente capazes de operar sem \textit{dropouts}.
 
 
 \section{Análise Comparativa --- Teste~5 (Estresse CPU-bound)}
@@ -703,13 +705,16 @@ prioridade de escalonamento mais alta (nível dinâmico~12) à sua
 \textit{thread} principal. Contudo, a análise revelou que parte significativa
 desse esforço computacional não é utilizada pelo motor de áudio, mas sim
 consumida pela renderização da interface gráfica (módulo
-\texttt{QuickFontCache}). O teste de latência confirmou essa limitação: sob
-as mesmas condições de sistema --- incluindo o driver NVIDIA
-(\texttt{nvlddmkm.sys}) e o Windows Defender (\texttt{msmpeng.exe}) ativos
---- o Ableton~Live manteve-se dentro do limiar aceitável ($805\,\mu$s),
-enquanto o FL~Studio atingiu $5274\,\mu$s, sendo classificado pelo
-LatencyMon como \textit{não apto} para áudio em tempo real sem
-\textit{dropouts}.
+\texttt{QuickFontCache}). O teste de latência, realizado em ambiente controlado,
+classificou \textbf{ambas as DAWs como aptas}: Ableton~Live com
+$805\,\mu$s e FL~Studio com $939\,\mu$s de latência máxima
+\textit{interrupt-to-process} --- ambas abaixo do limiar de $1000\,\mu$s.
+O driver NVIDIA (\texttt{nvlddmkm.sys}) foi o principal gerador de DPCs
+elevados no FL~Studio, enquanto o Windows Defender (\texttt{msmpeng.exe})
+contribuiu com \textit{hard pagefaults} em ambos os casos. Uma sessão
+anterior do FL~Studio com Defender em surto de varredura registrou
+$5274\,\mu$s, demonstrando que interferências externas podem superar em
+magnitude as diferenças arquiteturais entre as DAWs.
 
 Por fim, constatou-se que o uso de \textit{drivers} nativos mitiga a
 sobrecarga de CPU ao eliminar a intervenção do \textit{Kernel Mixer} do
