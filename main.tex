@@ -79,6 +79,9 @@
         \nohyphens{\local@coadvisorstring : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
     \fi
     \advance\count1 by 1}
+  \vspace{.3cm}
+  Repositório:\par
+  \href{https://github.com/henrique-noronha/so-daw-analysis}{\texttt{github.com/henrique-noronha/so-daw-analysis}} \par
 }
 
 \renewenvironment{abstract}{%
@@ -180,10 +183,10 @@ escalonamento e arquitetura do SO em ambientes de alta exigência em tempo real.
 
 \section{Gerenciamento de Processos e \textit{Threads}}
 
-Um \textbf{processo} é um programa em execução, dotado de espaço de
+Um processo é um programa em execução, dotado de espaço de
 endereçamento próprio e dos recursos a ele atribuídos pelo SO
 \cite{silberschatz2018}. Dentro de um processo podem coexistir múltiplas
-\textbf{\textit{threads}}: unidades menores de execução que compartilham o
+\textit{threads}: unidades menores de execução que compartilham o
 mesmo espaço de endereçamento, mas mantêm pilha e registradores próprios
 \cite{tanenbaum2016}. Essa partilha torna a troca de contexto entre
 \textit{threads} muito mais barata do que entre processos --- razão pela qual
@@ -192,13 +195,13 @@ processamento de blocos de amostras entre os núcleos do hardware.
 
 \subsection{Escalonador do Windows NT}
 
-O escalonador do Windows NT é \textbf{preemptivo baseado em prioridades},
+O escalonador do Windows NT é preemptivo baseado em prioridades,
 com 32 níveis (0--31): a faixa de usuário ocupa os níveis 1--15 e a faixa de
 tempo real, 16--31 \cite{stallings2017os}. Os valores observados neste
 trabalho situam-se na faixa de usuário: \textit{Normal} (8), \textit{Above
 Normal} (10) e \textit{High} (12--13). A cada \textit{thread} o sistema
-atribui uma \textbf{prioridade base} (derivada da classe do processo) e, em
-tempo de execução, pode aplicar um \textbf{\textit{priority boosting}}
+atribui uma prioridade base (derivada da classe do processo) e, em
+tempo de execução, pode aplicar um \textit{priority boosting}
 temporário --- elevação automática para compensar \textit{starvation} ou
 premiar \textit{threads} recém-acordadas de I/O \cite{stallings2017os}. O
 \textit{boost} decai gradualmente até retornar à base, o que explica a
@@ -208,9 +211,9 @@ o \textit{Process Explorer}.
 \subsection{Tempo Real Crítico vs.\ Não Crítico}
 
 \citeonline{silberschatz2018} distinguem dois regimes de tempo real. Em
-sistemas de \textbf{tempo real crítico} (\textit{hard real-time}), perder um
+sistemas de tempo real crítico (\textit{hard real-time}), perder um
 prazo é uma falha absoluta --- inaceitável em aviônica ou em dispositivos
-médicos. Em sistemas de \textbf{tempo real não crítico} (\textit{soft
+médicos. Em sistemas de tempo real não crítico (\textit{soft
 real-time}), a perda eventual de um prazo degrada a qualidade do serviço,
 mas não compromete o sistema. DAWs caem nesta segunda categoria: um
 \textit{buffer} não preenchido a tempo produz \textit{dropout} audível, mas
@@ -221,20 +224,20 @@ escalonador as despache primeiro sob contenção.
 
 \section{Interrupções e Latência de I/O em Tempo Real}
 
-Uma \textbf{interrupção de hardware} é um sinal assíncrono pelo qual um
+Uma interrupção de hardware é um sinal assíncrono pelo qual um
 periférico avisa o processador de que requer atenção imediata
 \cite{silberschatz2018}. Ao recebê-lo, o processador suspende a
 \textit{thread} corrente, salva seu estado e transfere o controle para a
-\textbf{Rotina de Serviço de Interrupção} (ISR). O intervalo entre o sinal e
-o início da ISR é a \textbf{latência de interrupção}; somada ao tempo de
+Rotina de Serviço de Interrupção (ISR). O intervalo entre o sinal e
+o início da ISR é a latência de interrupção; somada ao tempo de
 troca de contexto até a \textit{thread} destino, resulta na
-\textbf{latência de despacho} \cite{stallings2017os}. Em áudio, qualquer
+latência de despacho \cite{stallings2017os}. Em áudio, qualquer
 atraso de despacho que exceda o período do \textit{buffer} se manifesta como
 silêncio ou artefato sonoro.
 
 \subsection{\textit{Callback} de Áudio e Tamanho de \textit{Buffer}}
 
-Drivers de áudio operam no modelo \textbf{\textit{pull callback}}: o hardware
+Drivers de áudio operam no modelo \textit{pull callback}: o hardware
 solicita periodicamente um bloco de $N$ amostras e o motor de áudio tem até
 o prazo do próximo bloco para entregá-lo \cite{fons2010}. A relação entre
 \textit{buffer} e latência é direta:
@@ -251,12 +254,12 @@ escalonador \cite{kim2003}.
 
 \subsection{ASIO vs.\ WDM/DirectSound}
 
-O Windows expõe duas rotas de áudio ao aplicativo. Pelo \textbf{WDM/DirectSound},
+O Windows expõe duas rotas de áudio ao aplicativo. Pelo WDM/DirectSound,
 o fluxo passa pelo \textit{Kernel Audio Mixer} (KMixer), responsável por
 misturar áudio de múltiplos aplicativos antes de enviá-lo ao hardware
 \cite{microsoft2023asio}. Cada ciclo de \textit{buffer} acorda o KMixer,
 acrescentando latência e interrupções extras. Já o protocolo
-\textbf{ASIO} (\textit{Audio Stream Input/Output}) entrega ao driver do
+ASIO (\textit{Audio Stream Input/Output}) entrega ao driver do
 fabricante acesso direto ao hardware, ignorando o KMixer
 \cite{microsoft2023asio}. O ganho é uma redução substancial de latência e de
 carga sobre o escalonador.
@@ -276,9 +279,9 @@ trocando garantia formal por simplicidade de implementação.
 Cada processo recebe do SO um espaço de endereçamento virtual contíguo e
 isolado, independente da memória física disponível \cite{silberschatz2018}.
 A tradução entre endereço virtual e físico é feita pela MMU com base nas
-tabelas de páginas do \textit{kernel}. Na \textbf{paginação por demanda},
+tabelas de páginas do \textit{kernel}. Na paginação por demanda,
 uma página só é mapeada a um quadro físico quando acessada pela primeira
-vez --- evento chamado de \textbf{falta de página} (\textit{page fault})
+vez --- evento chamado de falta de página (\textit{page fault})
 \cite{tanenbaum2016}. Resolvê-la exige suspender a \textit{thread},
 localizar (ou ler do disco) a página e retomar a execução: uma latência
 não determinística que pode variar de microssegundos a milissegundos.
@@ -295,11 +298,11 @@ páginas na RAM via \texttt{mlock()} (Linux) ou \texttt{VirtualLock()}
 \citeonline{tanenbaum2016} contrastam dois modelos de alocação:
 
 \begin{itemize}
-    \item \textbf{\textit{Eager allocation}}: reserva e inicializa toda a
+    \item \textit{Eager allocation}: reserva e inicializa toda a
     memória prevista logo na inicialização do processo. Elimina faltas de
     página no caminho crítico, ao custo de uma pegada elevada em repouso.
 
-    \item \textbf{\textit{Lazy allocation}}: aloca recursos só quando
+    \item \textit{Lazy allocation}: aloca recursos só quando
     demandados. Mantém pegada mínima em repouso, mas introduz latência
     não determinística no momento da primeira alocação.
 \end{itemize}
@@ -323,7 +326,7 @@ O estudo adota abordagem quantitativa e comparativa para analisar o
 gerenciamento de recursos de \textit{Digital Audio Workstations} (DAWs) sob
 a ótica de Sistemas Operacionais, focando na interação entre o
 \textit{kernel} do Windows~11 (build~26200, x64) e os motores de áudio do
-\textbf{Ableton~Live~12} e do \textbf{FL~Studio~24}. Os experimentos foram
+Ableton~Live~12 e do FL~Studio~24. Os experimentos foram
 conduzidos em um notebook ASUS Vivobook K3605ZF equipado com processador
 Intel Core i5-12500H (12~núcleos, 16~\textit{threads}, base 3,1~GHz),
 16~GB de RAM DDR4 e GPU NVIDIA (driver \texttt{nvlddmkm.sys} v581.29). Para
@@ -335,26 +338,26 @@ sinal. O Windows Defender permaneceu ativo em todas as sessões, em condições
 idênticas para ambas as DAWs.
 
 A coleta de dados foi realizada com três ferramentas complementares. O
-\textbf{Performance Monitor} (PerfMon) capturou contadores do
+Performance Monitor (PerfMon) capturou contadores do
 \textit{kernel} a 1~Hz --- \texttt{\% Tempo de Processador},
 \texttt{Private Bytes} e \texttt{Contagem de Threads} por processo ---
 exportados via \texttt{relog} para formato \texttt{.csv}
-\cite{microsoft2023perfmon}. O \textbf{Process Explorer} (Sysinternals)
+\cite{microsoft2023perfmon}. O Process Explorer (Sysinternals)
 forneceu inspeção das \textit{threads} individuais, suas prioridades de
 escalonamento e consumo de CPU por unidade de execução. O
-\textbf{LatencyMon v7.31} \cite{asio4all} mediu latência
+LatencyMon v7.31 \cite{asio4all} mediu latência
 \textit{interrupt-to-process}, tempos de rotinas DPC e ISR e contagem de
 \textit{hard pagefaults} em nível de sistema.
 
 O protocolo experimental compreendeu cinco testes sequenciais. O
-\textbf{Teste~1} (repouso) coletou dados com a DAW aberta e sem projeto
-carregado por 2,5~minutos. O \textbf{Teste~2} (carga \textit{I/O-bound})
+Teste~1 (repouso) coletou dados com a DAW aberta e sem projeto
+carregado por 2,5~minutos. O Teste~2 (carga \textit{I/O-bound})
 adicionou a reprodução simultânea em \textit{loop} de 20~trilhas AIFF
-(PCM não comprimido) por 3~minutos. O \textbf{Teste~3} (escalonamento)
+(PCM não comprimido) por 3~minutos. O Teste~3 (escalonamento)
 inspecionou via Process Explorer a composição, prioridade e distribuição de
-\textit{threads} com o projeto ativo. O \textbf{Teste~4} (latência) executou
+\textit{threads} com o projeto ativo. O Teste~4 (latência) executou
 o LatencyMon por 2~min~50~s sobre o mesmo projeto, registrando DPCs, ISRs e
-\textit{pagefaults}. Por fim, o \textbf{Teste~5} (estresse CPU-bound)
+\textit{pagefaults}. Por fim, o Teste~5 (estresse CPU-bound)
 introduziu cinco instâncias do reverb nativo de cada DAW no canal Master e
 reduziu progressivamente o \textit{buffer size} de 4096 até
 128~\textit{samples}, identificando o ponto de ruptura (\textit{buffer
@@ -520,7 +523,7 @@ Thread de driver de áudio           & ilwasapi2asio\_x64& DSOUND.dll        \\
 % ---------------------------------------------------------------- %
 \section{Teste 4 --- Latência com Driver Nativo}
 
-O LatencyMon classificou o sistema como \textbf{apto} em ambas as DAWs
+O LatencyMon classificou o sistema como apto em ambas as DAWs
 (Tabela~\ref{tab:t4}). A latência máxima \textit{interrupt-to-process}
 atingiu $805{,}40\,\mu$s no Ableton~Live e $939{,}80\,\mu$s no
 FL~Studio --- ambos dentro do limiar aceitável de $1000\,\mu$s. O maior
@@ -597,10 +600,9 @@ Figuras~\ref{fig:t5lat} e~\ref{fig:t5comp} sintetizam o comportamento.
          indica o ponto de \textit{dropout} em cada DAW.}
 \label{fig:t5lat}
 \par\footnotesize{Fonte: dados coletados pelos autores, 27 maio 2026.}
-\end{figure}
 
-\begin{figure}[ht]
-\centering
+\bigskip
+
 \includegraphics[width=0.75\textwidth]{t5_ruptura_comparativo}
 \caption{Buffer mínimo estável e latência correspondente --- Teste~5.}
 \label{fig:t5comp}
@@ -614,34 +616,34 @@ Figuras~\ref{fig:t5lat} e~\ref{fig:t5comp} sintetizam o comportamento.
 \section{Análise Comparativa --- Teste~1 (Repouso)}
 
 Os resultados do Teste~1 revelam perfis de inicialização distintos. O
-\textbf{Ableton~Live} adota \textit{eager allocation}: aloca memória e cria
+Ableton~Live adota \textit{eager allocation}: aloca memória e cria
 \textit{threads} antecipadamente (${\approx}537$~MB, 55~\textit{threads}),
 garantindo baixa latência de despacho desde a inicialização
-\cite{silberschatz2018}. O \textbf{FL~Studio} demonstrou \textit{lazy
+\cite{silberschatz2018}. O FL~Studio demonstrou \textit{lazy
 allocation}: mantém apenas estruturas mínimas em repouso (${\approx}96$~MB,
 44~\textit{threads}), postergando alocações para o carregamento do projeto
 \cite{tanenbaum2016}.
 
 \section{Análise Comparativa --- Teste~2 (20 Trilhas AIFF)}
 
-O Teste~2 revelou três achados relevantes. Primeiro, a \textbf{redução de
-CPU sob carga \textit{I/O-bound}} em ambas as DAWs é explicada pelo driver
+O Teste~2 revelou três achados relevantes. Primeiro, a redução de
+CPU sob carga \textit{I/O-bound} em ambas as DAWs é explicada pelo driver
 de áudio nativo: ao assumir controle exclusivo do hardware, elimina a
 sobrecarga do \textit{Kernel Mixer} do Windows. Segundo, o
-\textbf{crescimento proporcional de RAM} foi semelhante em termos absolutos
+crescimento proporcional de RAM foi semelhante em termos absolutos
 ($+65$~MB no Ableton, $+52$~MB no FL~Studio), indicando custo por trilha
-AIFF comparável entre as arquiteturas. Terceiro, a \textbf{queda de
-\textit{threads} no FL~Studio} (de 44 para 27) indica consolidação de
+AIFF comparável entre as arquiteturas. Terceiro, a queda de
+\textit{threads} no FL~Studio (de 44 para 27) indica consolidação de
 \textit{threads} genéricas em especializadas de áudio ao carregar o projeto
 \cite{stallings2017os}.
 
 \section{Análise Comparativa --- Teste~3 (Escalonamento de \textit{Threads})}
 
-O \textbf{FL~Studio} opera com prioridade mais elevada (base~10,
+O FL~Studio opera com prioridade mais elevada (base~10,
 dinâmica~12), obtendo maior fatia de CPU em situações de concorrência
 \cite{silberschatz2018}. Contudo, 14 das 29~\textit{threads} pertencem ao
 \texttt{QuickFontCache}, indicando que parte do orçamento de CPU é consumida
-pela interface gráfica, e não pelo motor de áudio. O \textbf{Ableton~Live},
+pela interface gráfica, e não pelo motor de áudio. O Ableton~Live,
 com prioridade base inferior (8), distribui sua carga em 55~\textit{threads}
 via \textit{thread pool} do \texttt{ucrtbase}, favorecendo escalabilidade nos
 16~\textit{threads} lógicos do i5-12500H \cite{tanenbaum2016}. Nenhuma das
@@ -651,7 +653,7 @@ DAWs usa prioridade \textit{Time Critical} (15), confirmando o enquadramento
 \section{Análise Comparativa --- Teste~4 (Latência)}
 
 O Teste~4, realizado em ambiente controlado com navegador e aplicativos
-secundários encerrados, classificou \textbf{ambas as DAWs como aptas} para
+secundários encerrados, classificou ambas as DAWs como aptas para
 operação de áudio em tempo real. O Ableton~Live registrou latência máxima
 de $805\,\mu$s e o FL~Studio de $939\,\mu$s --- diferença de $\approx17\%$,
 ambas abaixo do limiar crítico de $1000\,\mu$s do LatencyMon.
@@ -681,7 +683,7 @@ O resultado do Teste~5 deve ser interpretado com cautela, pois as duas DAWs
 utilizaram drivers de áudio distintos --- diferença que constitui, em si
 mesma, um dado relevante sobre as escolhas arquiteturais de cada fabricante.
 
-O \textbf{FL~Studio} com driver \textbf{ASIO} sustentou reprodução estável
+O FL~Studio com driver ASIO sustentou reprodução estável
 até $256$~\textit{samples} ($6$~ms), confirmando o benefício do acesso
 direto ao hardware proporcionado pelo protocolo ASIO: ao contornar o
 \textit{Kernel Audio Mixer} (KMixer) do Windows, o driver reduz o número de
@@ -691,7 +693,7 @@ prioridade de \textit{thread} mais elevada (base~10, dinâmica~12) observada
 no Teste~3, que garante ao motor de áudio maior janela de tempo para preencher
 cada bloco antes do prazo.
 
-O \textbf{Ableton~Live} com \textbf{MME/DirectX} iniciou os \textit{dropouts}
+O Ableton~Live com MME/DirectX iniciou os \textit{dropouts}
 em $1024$~\textit{samples} ($23{,}2$~ms) --- quatro vezes acima do ponto de
 ruptura do FL~Studio. Esse comportamento é previsível à luz do referencial
 teórico: o caminho WDM/DirectX passa pelo KMixer, que adiciona latência e
@@ -729,7 +731,7 @@ prioridade de escalonamento mais alta (nível dinâmico~12) à sua
 desse esforço computacional não é utilizada pelo motor de áudio, mas sim
 consumida pela renderização da interface gráfica (módulo
 \texttt{QuickFontCache}). O teste de latência, realizado em ambiente controlado,
-classificou \textbf{ambas as DAWs como aptas}: Ableton~Live com
+classificou ambas as DAWs como aptas: Ableton~Live com
 $805\,\mu$s e FL~Studio com $939\,\mu$s de latência máxima
 \textit{interrupt-to-process} --- ambas abaixo do limiar de $1000\,\mu$s.
 O driver NVIDIA (\texttt{nvlddmkm.sys}) foi o principal gerador de DPCs
