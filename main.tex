@@ -36,7 +36,10 @@
  \end{center}
   \begin{center}
   \vspace{4cm}
-  \nohyphens{\MakeUppercase{\bf\@authname\ \@authsurn}}\par
+  \nohyphens{\MakeUppercase{\bf Henrique Noronha Fernandes}}\par
+  \nohyphens{\MakeUppercase{\bf João Victor Melo do Nascimento}}\par
+  \nohyphens{\MakeUppercase{\bf Lauro Oliveira Mota}}\par
+  \nohyphens{\MakeUppercase{\bf Hátilan Caio Alves Fontes}}\par
   \vspace{4cm}
   \nohyphens{\bf\MakeUppercase\local@title}\par
   \vfill
@@ -46,13 +49,32 @@
   \global\let\maketitle\relax \global\let\and\relax
 }
 
+\renewcommand\makefrontpage{%
+  \begin{center}
+  {\bf Henrique Noronha Fernandes}\par
+  {\bf João Victor Melo do Nascimento}\par
+  {\bf Lauro Oliveira Mota}\par
+  {\bf Hátilan Caio Alves Fontes}\par
+  \vfill
+  \nohyphens{\bf \local@title}\par
+  \end{center}
+  \vfill
+  \begin{flushright}
+  \begin{minipage}{8.45cm}
+  \setstretch{1}
+  \frontpage@maintext
+  \end{minipage}\par
+  \end{flushright}
+  \vfill
+  \frontpage@bottomtext}
+
 \renewcommand\frontpage@maintext{
   \sloppy\nohyphens{\local@doctype\ apresentado à \local@universityname\ para obten{\c c}{\~ a}o do t{\' i}tulo de \local@degname\ em \local@deptname .}
  \vspace{.5cm}
     \count1=0
     \@whilenum \count1<\@advisor \do{%
     \ifcase\count1
-        \nohyphens{\local@advisorstring : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
+        \nohyphens{Professor : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
     \else
         \nohyphens{\local@coadvisorstring : \csname uftAdvisorDegree:\the\count1 \endcsname \ \csname uftAdvisorName:\the\count1 \endcsname \ \csname uftAdvisorSurname:\the\count1 \endcsname} \par
     \fi
@@ -88,7 +110,8 @@
 
   \title{Análise Comparativa de Gerenciamento de Recursos do SO: Ableton Live vs. FL Studio}
   \author{Henrique}{Noronha Fernandes}
-  \advisor{Prof.}{[Nome do Professor de SO]}{[Sobrenome]}{[Titulação]}
+ 
+  \advisor{Prof.}{Antonio Marcos A.}{Ferreira}{Dr.}
 
   \department{Ciência da Computação}
   \date{15}{04}{2026}
