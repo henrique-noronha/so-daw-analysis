@@ -157,140 +157,150 @@ escalonamento e arquitetura do SO em ambientes de alta exigência em tempo real.
 
 \section{Gerenciamento de Processos e \textit{Threads}}
 
-Um \textbf{processo} é um programa em execução, dotado de espaço de
-endereçamento próprio e dos recursos a ele atribuídos pelo SO
-\cite{silberschatz2018}. Dentro de um processo podem coexistir múltiplas
-\textbf{\textit{threads}}: unidades menores de execução que compartilham o
-mesmo espaço de endereçamento, mas mantêm pilha e registradores próprios
-\cite{tanenbaum2016}. Essa partilha torna a troca de contexto entre
-\textit{threads} muito mais barata do que entre processos --- razão pela qual
-motores de áudio recorrem ao \textit{multithreading} para distribuir o
+Um processo é um programa que está sendo executado pelo sistema operacional,
+com espaço de endereçamento próprio e os recursos atribuídos pelo SO
+\cite{silberschatz2018}. Dentro de um mesmo processo podem existir várias
+\textit{threads}: unidades menores de execução que compartilham o espaço de
+endereçamento do processo, mas têm pilha e registradores próprios
+\cite{tanenbaum2016}. Como elas compartilham memória, a troca de contexto
+entre \textit{threads} é bem mais barata do que entre processos. Por causa
+disso, motores de áudio costumam usar \textit{multithreading} para dividir o
 processamento de blocos de amostras entre os núcleos do hardware.
 
 \subsection{Escalonador do Windows NT}
 
-O escalonador do Windows NT é \textbf{preemptivo baseado em prioridades},
-com 32 níveis (0--31): a faixa de usuário ocupa os níveis 1--15 e a faixa de
-tempo real, 16--31 \cite{stallings2017os}. Os valores observados neste
-trabalho situam-se na faixa de usuário: \textit{Normal} (8), \textit{Above
-Normal} (10) e \textit{High} (12--13). A cada \textit{thread} o sistema
-atribui uma \textbf{prioridade base} (derivada da classe do processo) e, em
-tempo de execução, pode aplicar um \textbf{\textit{priority boosting}}
-temporário --- elevação automática para compensar \textit{starvation} ou
-premiar \textit{threads} recém-acordadas de I/O \cite{stallings2017os}. O
-\textit{boost} decai gradualmente até retornar à base, o que explica a
-divergência entre prioridade base e dinâmica observável em ferramentas como
-o \textit{Process Explorer}.
+O escalonador do Windows NT é preemptivo e baseado em prioridades, com
+32 níveis numerados de 0 a 31. Os níveis 1 a 15 formam a faixa de usuário e
+os níveis 16 a 31 formam a faixa de tempo real \cite{stallings2017os}. Os
+valores observados nos testes deste trabalho ficam todos na faixa de
+usuário: \textit{Normal} (8), \textit{Above Normal} (10) e \textit{High}
+(12 e 13).
+
+Cada \textit{thread} tem uma prioridade base, derivada da classe do processo.
+Em tempo de execução, o sistema pode aplicar um \textit{priority boost}
+temporário para evitar \textit{starvation} ou premiar \textit{threads} que
+acabaram de acordar de uma operação de I/O \cite{stallings2017os}. Esse
+\textit{boost} vai caindo até a \textit{thread} voltar à prioridade base, e
+isso explica por que o Process Explorer mostra valores diferentes para
+prioridade base e prioridade dinâmica.
 
 \subsection{Tempo Real Crítico vs.\ Não Crítico}
 
-\citeonline{silberschatz2018} distinguem dois regimes de tempo real. Em
-sistemas de \textbf{tempo real crítico} (\textit{hard real-time}), perder um
-prazo é uma falha absoluta --- inaceitável em aviônica ou em dispositivos
-médicos. Em sistemas de \textbf{tempo real não crítico} (\textit{soft
-real-time}), a perda eventual de um prazo degrada a qualidade do serviço,
-mas não compromete o sistema. DAWs caem nesta segunda categoria: um
-\textit{buffer} não preenchido a tempo produz \textit{dropout} audível, mas
-a máquina continua estável. Basta, portanto, que as \textit{threads} de
-áudio operem em prioridade superior à dos processos comuns para que o
-escalonador as despache primeiro sob contenção.
+\citeonline{silberschatz2018} dividem os sistemas de tempo real em dois
+tipos. No tempo real crítico (\textit{hard real-time}), perder um prazo é
+uma falha grave, inaceitável em aplicações como aviônica ou equipamento
+médico. No tempo real não crítico (\textit{soft real-time}), perder um prazo
+eventualmente atrapalha a qualidade do serviço, mas não compromete o sistema
+como um todo.
+
+As DAWs ficam nesse segundo grupo. Quando um \textit{buffer} de áudio não é
+preenchido a tempo, o usuário ouve um \textit{dropout}, mas a máquina
+continua estável. Para garantir prioridade sem precisar de garantia formal,
+basta colocar as \textit{threads} de áudio em prioridade maior que a dos
+processos comuns. Assim, o escalonador as despacha primeiro quando há
+disputa por CPU.
 
 
 \section{Interrupções e Latência de I/O em Tempo Real}
 
-Uma \textbf{interrupção de hardware} é um sinal assíncrono pelo qual um
-periférico avisa o processador de que requer atenção imediata
-\cite{silberschatz2018}. Ao recebê-lo, o processador suspende a
-\textit{thread} corrente, salva seu estado e transfere o controle para a
-\textbf{Rotina de Serviço de Interrupção} (ISR). O intervalo entre o sinal e
-o início da ISR é a \textbf{latência de interrupção}; somada ao tempo de
-troca de contexto até a \textit{thread} destino, resulta na
-\textbf{latência de despacho} \cite{stallings2017os}. Em áudio, qualquer
-atraso de despacho que exceda o período do \textit{buffer} se manifesta como
-silêncio ou artefato sonoro.
+Uma interrupção de hardware é um sinal assíncrono que um periférico envia
+ao processador para avisar que precisa de atenção imediata
+\cite{silberschatz2018}. Quando o sinal chega, o processador para a
+\textit{thread} que está executando, salva seu estado e transfere o
+controle para a Rotina de Serviço de Interrupção (ISR). O intervalo entre o
+sinal e o início da ISR é chamado de latência de interrupção. Somando esse
+intervalo ao tempo de troca de contexto até a \textit{thread} destino, temos
+a latência de despacho \cite{stallings2017os}. No caso do áudio, se essa
+latência ultrapassar o período do \textit{buffer}, aparece silêncio ou
+artefato sonoro na saída.
 
 \subsection{\textit{Callback} de Áudio e Tamanho de \textit{Buffer}}
 
-Drivers de áudio operam no modelo \textbf{\textit{pull callback}}: o hardware
-solicita periodicamente um bloco de $N$ amostras e o motor de áudio tem até
-o prazo do próximo bloco para entregá-lo \cite{fons2010}. A relação entre
-\textit{buffer} e latência é direta:
+Drivers de áudio modernos funcionam no modelo \textit{pull callback}: o
+hardware solicita periodicamente um bloco de $N$ amostras, e o motor de
+áudio precisa entregá-lo antes do próximo bloco ser pedido \cite{fons2010}.
+A relação entre tamanho do \textit{buffer} e latência é dada por:
 
 \begin{equation}
   L = \frac{N}{f_s}
 \end{equation}
 
 \noindent onde $L$ é a latência em segundos, $N$ o tamanho do bloco em
-amostras e $f_s$ a taxa de amostragem. A 44.100~Hz, $N = 256$ corresponde a
-${\approx}5{,}8$~ms. Reduzir $N$ diminui a latência perceptível, mas
-multiplica a frequência das interrupções --- e, com ela, a pressão sobre o
-escalonador \cite{kim2003}.
+amostras e $f_s$ a taxa de amostragem. Por exemplo, com $f_s = 44.100$~Hz e
+$N = 256$, a latência fica em torno de $5{,}8$~ms. Reduzir $N$ diminui a
+latência percebida, mas aumenta a frequência das interrupções e, com isso, a
+carga sobre o escalonador \cite{kim2003}.
 
 \subsection{ASIO vs.\ WDM/DirectSound}
 
-O Windows expõe duas rotas de áudio ao aplicativo. Pelo \textbf{WDM/DirectSound},
-o fluxo passa pelo \textit{Kernel Audio Mixer} (KMixer), responsável por
-misturar áudio de múltiplos aplicativos antes de enviá-lo ao hardware
-\cite{microsoft2023asio}. Cada ciclo de \textit{buffer} acorda o KMixer,
-acrescentando latência e interrupções extras. Já o protocolo
-\textbf{ASIO} (\textit{Audio Stream Input/Output}) entrega ao driver do
-fabricante acesso direto ao hardware, ignorando o KMixer
-\cite{microsoft2023asio}. O ganho é uma redução substancial de latência e de
-carga sobre o escalonador.
+O Windows oferece dois caminhos principais para áudio. No caminho
+WDM/DirectSound, o sinal passa pelo \textit{Kernel Audio Mixer} (KMixer),
+que junta os fluxos de vários aplicativos antes de enviar para o hardware
+\cite{microsoft2023asio}. Como o KMixer precisa ser acordado a cada ciclo
+de \textit{buffer}, isso acaba adicionando latência e gerando interrupções
+extras.
 
-\subsection{Por que DAWs não usam Escalonamento de Prazos}
+Já o protocolo ASIO (\textit{Audio Stream Input/Output}) dá ao driver do
+fabricante acesso direto ao hardware, pulando o KMixer
+\cite{microsoft2023asio}. O resultado é menos latência e menos pressão sobre
+o escalonador.
 
-\citeonline{liu1973} formalizaram o escalonamento em tempo real com o
+\subsection{Algoritmos Formais de Escalonamento em Tempo Real}
+
+Vale lembrar que existe uma linha de pesquisa formal sobre escalonamento de
+prazos em tempo real. \citeonline{liu1973} formalizaram o problema com o
 algoritmo \textit{Rate Monotonic}, e \citeonline{buttazzo2011} mostraram que
-a garantia formal de prazos exige análise de pior caso (WCET). DAWs, como
-sistemas \textit{soft real-time}, dispensam esse rigor: limitam-se a elevar
-a prioridade das \textit{threads} de áudio no escalonador genérico do SO,
-trocando garantia formal por simplicidade de implementação.
+garantir prazos formalmente exige análise de pior caso (WCET). As DAWs, por
+serem \textit{soft real-time}, não usam esse rigor. Elas apenas aumentam a
+prioridade das \textit{threads} de áudio no escalonador comum do SO,
+abrindo mão da garantia formal em troca de simplicidade de implementação.
 
 
 \section{Gerenciamento de Memória e Paginação}
 
 Cada processo recebe do SO um espaço de endereçamento virtual contíguo e
 isolado, independente da memória física disponível \cite{silberschatz2018}.
-A tradução entre endereço virtual e físico é feita pela MMU com base nas
-tabelas de páginas do \textit{kernel}. Na \textbf{paginação por demanda},
-uma página só é mapeada a um quadro físico quando acessada pela primeira
-vez --- evento chamado de \textbf{falta de página} (\textit{page fault})
-\cite{tanenbaum2016}. Resolvê-la exige suspender a \textit{thread},
-localizar (ou ler do disco) a página e retomar a execução: uma latência
-não determinística que pode variar de microssegundos a milissegundos.
+A tradução entre endereço virtual e físico é feita pela MMU, usando as
+tabelas de páginas mantidas pelo \textit{kernel}. Na paginação por demanda,
+uma página só é mapeada para um quadro físico (\textit{frame}) quando é
+acessada pela primeira vez. Esse evento é chamado de falta de página
+(\textit{page fault}) \cite{tanenbaum2016}. Para resolver uma falta de
+página, o \textit{kernel} suspende a \textit{thread}, localiza a página (ou
+lê do disco se necessário) e retoma a execução. O tempo total dessa
+operação é não determinístico e pode variar de microssegundos a
+milissegundos, dependendo de onde a página estava.
 
-Para áudio em tempo real, uma falta de página durante o processamento de um
-bloco é especialmente cara: a \textit{thread} fica bloqueada enquanto o
-prazo do \textit{buffer} avança \cite{kim2003}. Sistemas críticos fixam
-páginas na RAM via \texttt{mlock()} (Linux) ou \texttt{VirtualLock()}
-(Windows); DAWs comerciais costumam optar por alocação antecipada
-(\textit{eager allocation}) como equivalente prático.
+Para áudio em tempo real, uma falta de página no meio do processamento de
+um bloco é especialmente cara: a \textit{thread} fica bloqueada esperando o
+\textit{kernel} resolver, enquanto o prazo do \textit{buffer} continua
+correndo \cite{kim2003}. Sistemas críticos resolvem esse problema fixando
+páginas na RAM com \texttt{mlock()} no Linux ou \texttt{VirtualLock()} no
+Windows. As DAWs comerciais costumam adotar uma estratégia diferente:
+alocam boa parte da memória logo na inicialização, o que tem efeito
+parecido na prática.
 
 \subsection{\textit{Eager} vs.\ \textit{Lazy Allocation}}
 
-\citeonline{tanenbaum2016} contrastam dois modelos de alocação:
-
-\begin{itemize}
-    \item \textbf{\textit{Eager allocation}}: reserva e inicializa toda a
-    memória prevista logo na inicialização do processo. Elimina faltas de
-    página no caminho crítico, ao custo de uma pegada elevada em repouso.
-
-    \item \textbf{\textit{Lazy allocation}}: aloca recursos só quando
-    demandados. Mantém pegada mínima em repouso, mas introduz latência
-    não determinística no momento da primeira alocação.
-\end{itemize}
+\citeonline{tanenbaum2016} contrastam dois modelos de alocação. Na
+\textit{eager allocation}, o processo reserva e inicializa toda a memória
+prevista logo no início. Isso elimina faltas de página no caminho crítico,
+mas mantém uma pegada de memória grande mesmo em repouso. Já na
+\textit{lazy allocation}, os recursos são alocados só conforme vão sendo
+demandados; a pegada em repouso fica mínima, mas pode haver latência não
+determinística no momento da primeira alocação. Como será discutido no
+Capítulo~5, esse contraste aparece de forma bem clara nos resultados deste
+trabalho.
 
 \subsection{\textit{Private Bytes}}
 
 O contador \textit{Private Bytes} do Windows mede a memória virtual
-comprometida exclusivamente pelo processo --- ignorando DLLs e demais
-regiões compartilhadas \cite{stallings2018}. É a métrica mais fiel ao custo
-real de memória da aplicação, por refletir o que precisaria ser paginado
-caso o sistema ficasse sem RAM física. Em DAWs, o crescimento desse contador
-ao carregar trilhas reflete sobretudo os \textit{buffers} de pré-leitura e
-as estruturas de decodificação mantidas em memória para reprodução de
-baixa latência.
+comprometida exclusivamente pelo processo, sem contar DLLs e outras regiões
+compartilhadas \cite{stallings2018}. Essa é a métrica que melhor reflete o
+custo real de memória da aplicação, já que mostra o que precisaria ser
+paginado para disco caso o sistema ficasse sem RAM física. No caso das
+DAWs, o crescimento desse contador ao carregar trilhas vem principalmente
+dos \textit{buffers} de pré-leitura e das estruturas de decodificação que
+precisam ficar em memória para garantir reprodução de baixa latência.
 
 
 % ----------------------------------------------------------------------------------------------------- %
@@ -576,9 +586,9 @@ Figuras~\ref{fig:t5lat} e~\ref{fig:t5comp} sintetizam o comportamento.
 \par\footnotesize{Fonte: dados coletados pelos autores, 27 maio 2026.}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{t5_ruptura_comparativo}
+\includegraphics[width=0.65\textwidth,keepaspectratio]{t5_ruptura_comparativo}
 \caption{Buffer mínimo estável e latência correspondente --- Teste~5.}
 \label{fig:t5comp}
 \par\footnotesize{Fonte: dados coletados pelos autores, 27 maio 2026.}
